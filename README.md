@@ -1,7 +1,43 @@
 Geobed
 ============
 
-[![Build Status](https://drone.io/github.com/SocialHarvest/geobed/status.png)](https://drone.io/github.com/SocialHarvest/geobed/latest) [![Coverage Status](https://coveralls.io/repos/SocialHarvest/geobed/badge.png)](https://coveralls.io/r/SocialHarvest/geobed)
+## JVMATL Fork
+
+I've made a fork that includes a snapshot of the downloadable data
+sets, for an offline application without internet access. I only need
+a subset of the functionality of the original Geobed, so parts may be
+removed or modified without warning. This work is public, and if it's
+useful to you, you are welcome to do whatever you want with it,
+(subject to the conditions of the original author's license and that
+of the data set owners,) but it is not my intention to make this a
+public *project.* I just don't have that kind of time at this point in
+my life.
+
+### Summary of my changes: 
+My goal is to turn this into a truly standalone
+module with embedded geo data that can do high-level, high(ish) speed
+reverse-geocoding in an intranet that has no internet access, and then
+build that into a docker container with a thin web-service veneer on
+top, so I can add it to a k8s cluster that processes a lot of location
+(lat/long) data and use it to enhance that data set with
+human-readable locations. Here's what I've done so far:
+* Downloaded a snapshot of the geonames.org data and added it to the repo.
+* found an old copy of the old public maxmind data set and did the
+  same (newer versions of the data set require you to get a login,
+  etc. etc. -- Not worth the hassle for my application)
+* ran the program once locally, so that it would generate the cache
+  files (the .dmp files are GOB encoded Golang structures, and only
+  take a few seconds to load)
+* commited the gob files to the repo
+* embedded the gob encoded cache into the module with the go:embed
+  directive and modified the code that loads and stores the cache
+  files to write to a different directory from the one that stores the
+  raw geo data. The raw geo data is still part of the *repo*, but the
+  pre-digested map data cache is becoming part of the *binary*
+
+# ORIGINAL README
+======================
+
 
 This Golang package contains an embedded geocoder. There are no major external dependendies other than some downloaded data files. Once downloaded, those data files 
 are stored in memory. So after the initial load there truly are no outside dependencies. It geocodes and reverse geocodes to a city level detail. It approximates and takes 
