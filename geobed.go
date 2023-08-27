@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bufio"
 	"bytes"
+	"compress/bzip2"
 	"compress/gzip"
 	"embed"
 	_ "embed"
@@ -50,7 +51,7 @@ var cacheData embed.FS
 var dataSetFiles = []map[string]string{
 	{"url": "http://download.geonames.org/export/dump/cities1000.zip", "path": "./geobed-data/cities1000.zip", "id": "geonamesCities1000"},
 	{"url": "http://download.geonames.org/export/dump/countryInfo.txt", "path": "./geobed-data/countryInfo.txt", "id": "geonamesCountryInfo"},
-	{"url": "http://download.maxmind.com/download/worldcities/worldcitiespop.txt.gz", "path": "./geobed-data/worldcitiespop.txt.gz", "id": "maxmindWorldCities"},
+	//{"url": "http://download.maxmind.com/download/worldcities/worldcitiespop.txt.gz", "path": "./geobed-data/worldcitiespop.txt.gz", "id": "maxmindWorldCities"},
 	//{"url": "http://geolite.maxmind.com/download/geoip/database/GeoLiteCity_CSV/GeoLiteCity-latest.zip", "path": "./geobed-data/GeoLiteCity-latest.zip", "id": "maxmindLiteCity"},
 }
 
@@ -1034,12 +1035,32 @@ func (g GeoBed) store() error {
 	return nil
 }
 
+// given a filename, looks for filename.bz2 and tries to return a
+// reader to it. If it doesn't find the compressed version, it looks
+// for the uncompressed version. (The go library doesn't have built-in
+// bzip2 compression, and the 3rd-party options look sketchy, so if
+// you want to download and store a new compressed snapshot, run the
+// binary, download the files, and compress them yourself.
+func openOptionallyBzippedFile(file string) (io.Reader, error) {
+	fh, err := os.Open(file + ".bz2")
+	if err != nil {
+		fh, err = os.Open(file)
+		if err == nil {
+			return nil, err
+		}
+		return fh, nil
+	}
+
+	return bzip2.NewReader(fh), nil
+}
+
 // Loads a GeobedCity dump, which saves a bit of time.
 func loadGeobedCityData() ([]GeobedCity, error) {
-	fh, err := os.Open("geobed-cache/g.c.dmp")
+	fh, err := openOptionallyBzippedFile("geobed-cache/g.c.dmp")
 	if err != nil {
 		return nil, err
 	}
+
 	gc := []GeobedCity{}
 	dec := gob.NewDecoder(fh)
 	err = dec.Decode(&gc)
@@ -1050,7 +1071,7 @@ func loadGeobedCityData() ([]GeobedCity, error) {
 }
 
 func loadGeobedCountryData() ([]CountryInfo, error) {
-	fh, err := os.Open("geobed-cache/g.co.dmp")
+	fh, err := openOptionallyBzippedFile("geobed-cache/g.co.dmp")
 	if err != nil {
 		return nil, err
 	}
@@ -1064,7 +1085,7 @@ func loadGeobedCountryData() ([]CountryInfo, error) {
 }
 
 func loadGeobedCityNameIdx() error {
-	fh, err := os.Open("geobed-cache/cityNameIdx.dmp")
+	fh, err := openOptionallyBzippedFile("geobed-cache/cityNameIdx.dmp")
 	if err != nil {
 		return err
 	}
