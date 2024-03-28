@@ -9,6 +9,7 @@ import (
 	"embed"
 	_ "embed"
 	"encoding/gob"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -17,6 +18,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/adrg/xdg"
 
 	geohash "github.com/TomiHiltunen/geohash-golang"
 )
@@ -48,11 +51,35 @@ import (
 var cacheData embed.FS
 
 // A list of data sources.
-var dataSetFiles = []map[string]string{
-	{"url": "http://download.geonames.org/export/dump/cities1000.zip", "path": "./geobed-data/cities1000.zip", "id": "geonamesCities1000"},
-	{"url": "http://download.geonames.org/export/dump/countryInfo.txt", "path": "./geobed-data/countryInfo.txt", "id": "geonamesCountryInfo"},
-	//{"url": "http://download.maxmind.com/download/worldcities/worldcitiespop.txt.gz", "path": "./geobed-data/worldcitiespop.txt.gz", "id": "maxmindWorldCities"},
-	//{"url": "http://geolite.maxmind.com/download/geoip/database/GeoLiteCity_CSV/GeoLiteCity-latest.zip", "path": "./geobed-data/GeoLiteCity-latest.zip", "id": "maxmindLiteCity"},
+var dataSetFiles []map[string]string
+
+func init() {
+	cities1000, err := dataSetPath("cities1000.zip")
+	if err != nil {
+		log.Fatalf("err building cache path for cities1000: %v", err)
+	}
+
+	countryInfo, err := dataSetPath("countryInfo.zip")
+	if err != nil {
+		log.Fatalf("err building cache path for countryInfo: %v", err)
+	}
+
+	dataSetFiles = []map[string]string{
+		{"url": "http://download.geonames.org/export/dump/cities1000.zip", "path": cities1000, "id": "geonamesCities1000"},
+		{"url": "http://download.geonames.org/export/dump/countryInfo.txt", "path": countryInfo, "id": "geonamesCountryInfo"},
+		//{"url": "http://download.maxmind.com/download/worldcities/worldcitiespop.txt.gz", "path": "./geobed-data/worldcitiespop.txt.gz", "id": "maxmindWorldCities"},
+		//{"url": "http://geolite.maxmind.com/download/geoip/database/GeoLiteCity_CSV/GeoLiteCity-latest.zip", "path": "./geobed-data/GeoLiteCity-latest.zip", "id": "maxmindLiteCity"},
+	}
+}
+
+func dataSetPath(path string) (string, error) {
+	relPath := fmt.Sprintf("geobed-data/%s", path)
+	return xdg.CacheFile(relPath)
+}
+
+func dataCachePath(path string) (string, error) {
+	relPath := fmt.Sprintf("geobed-cache/%s", path)
+	return xdg.CacheFile(relPath)
 }
 
 // A handy map of US state codes to full names.
@@ -231,7 +258,6 @@ func NewGeobed() GeoBed {
 
 // Downloads the data sets if needed.
 func (g *GeoBed) downloadDataSets() {
-	os.Mkdir("./geobed-data", 0777)
 	for _, f := range dataSetFiles {
 		_, err := os.Stat(f["path"])
 		if err != nil {
@@ -974,7 +1000,13 @@ func (g GeoBed) store() error {
 		return err
 	}
 
-	fh, eopen := os.OpenFile("./geobed-cache/g.c.dmp", os.O_CREATE|os.O_WRONLY, 0666)
+	path, err := dataCachePath("g.c.dmp")
+	if err != nil {
+		b.Reset()
+		return err
+	}
+
+	fh, eopen := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0o666)
 	defer fh.Close()
 	if eopen != nil {
 		b.Reset()
@@ -996,7 +1028,13 @@ func (g GeoBed) store() error {
 		return err
 	}
 
-	fh, eopen = os.OpenFile("./geobed-cache/g.co.dmp", os.O_CREATE|os.O_WRONLY, 0666)
+	path, err = dataCachePath("g.co.dmp")
+	if err != nil {
+		b.Reset()
+		return err
+	}
+
+	fh, eopen = os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0o666)
 	defer fh.Close()
 	if eopen != nil {
 		b.Reset()
@@ -1018,7 +1056,13 @@ func (g GeoBed) store() error {
 		return err
 	}
 
-	fh, eopen = os.OpenFile("./geobed-cache/cityNameIdx.dmp", os.O_CREATE|os.O_WRONLY, 0666)
+	path, err = dataCachePath("cityNameIdx.dmp")
+	if err != nil {
+		b.Reset()
+		return err
+	}
+
+	fh, eopen = os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0o666)
 	defer fh.Close()
 	if eopen != nil {
 		b.Reset()
