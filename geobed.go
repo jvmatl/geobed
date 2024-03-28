@@ -77,6 +77,11 @@ func dataSetPath(path string) (string, error) {
 	return xdg.CacheFile(relPath)
 }
 
+func dataCachePath(path string) (string, error) {
+	relPath := fmt.Sprintf("geobed-cache/%s", path)
+	return xdg.CacheFile(relPath)
+}
+
 // A handy map of US state codes to full names.
 var UsSateCodes = map[string]string{
 	"AL": "Alabama",
@@ -995,7 +1000,13 @@ func (g GeoBed) store() error {
 		return err
 	}
 
-	fh, eopen := os.OpenFile("./geobed-cache/g.c.dmp", os.O_CREATE|os.O_WRONLY, 0o666)
+	path, err := dataCachePath("g.c.dmp")
+	if err != nil {
+		b.Reset()
+		return err
+	}
+
+	fh, eopen := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0o666)
 	defer fh.Close()
 	if eopen != nil {
 		b.Reset()
@@ -1017,7 +1028,13 @@ func (g GeoBed) store() error {
 		return err
 	}
 
-	fh, eopen = os.OpenFile("./geobed-cache/g.co.dmp", os.O_CREATE|os.O_WRONLY, 0o666)
+	path, err = dataCachePath("g.co.dmp")
+	if err != nil {
+		b.Reset()
+		return err
+	}
+
+	fh, eopen = os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0o666)
 	defer fh.Close()
 	if eopen != nil {
 		b.Reset()
@@ -1039,7 +1056,13 @@ func (g GeoBed) store() error {
 		return err
 	}
 
-	fh, eopen = os.OpenFile("./geobed-cache/cityNameIdx.dmp", os.O_CREATE|os.O_WRONLY, 0o666)
+	path, err = dataCachePath("cityNameIdx.dmp")
+	if err != nil {
+		b.Reset()
+		return err
+	}
+
+	fh, eopen = os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0o666)
 	defer fh.Close()
 	if eopen != nil {
 		b.Reset()
