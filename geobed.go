@@ -56,12 +56,14 @@ var dataSetFiles []map[string]string
 func init() {
 	cities1000, err := dataSetPath("cities1000.zip")
 	if err != nil {
-		log.Fatalf("err building cache path for cities1000: %v", err)
+		log.Printf("err building cache path for cities1000: %v", err)
+		return
 	}
 
 	countryInfo, err := dataSetPath("countryInfo.zip")
 	if err != nil {
-		log.Fatalf("err building cache path for countryInfo: %v", err)
+		log.Printf("err building cache path for countryInfo: %v", err)
+		return
 	}
 
 	dataSetFiles = []map[string]string{
