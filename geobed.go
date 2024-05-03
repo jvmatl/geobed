@@ -9,7 +9,9 @@ import (
 	"embed"
 	_ "embed"
 	"encoding/gob"
+	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -1035,6 +1037,20 @@ func (g GeoBed) store() error {
 	return nil
 }
 
+func openOptionallyCachedFile(file string) (fs.File, error) {
+	fh, err := cacheData.Open(file)
+	if err != nil {
+		fmt.Printf("failed to open cached %s (%v)\n", file, err)
+		fmt.Printf("trying to open local-fs %s\n", file)
+		fh, err = os.Open(file)
+		if err != nil {
+			fmt.Printf("failed to open local-fs %s (%v)\n", file, err)
+			return nil, err
+		}
+	}
+	return fh, nil
+}
+
 // given a filename, looks for filename.bz2 and tries to return a
 // reader to it. If it doesn't find the compressed version, it looks
 // for the uncompressed version. (The go library doesn't have built-in
@@ -1042,10 +1058,13 @@ func (g GeoBed) store() error {
 // you want to download and store a new compressed snapshot, run the
 // binary, download the files, and compress them yourself.
 func openOptionallyBzippedFile(file string) (io.Reader, error) {
-	fh, err := os.Open(file + ".bz2")
+	fh, err := openOptionallyCachedFile(file + ".bz2")
 	if err != nil {
-		fh, err = os.Open(file)
+		fmt.Printf("failed to open %s.bz2 (%v)\n", file, err)
+		fmt.Printf("trying to open %s\n", file)
+		fh, err = openOptionallyCachedFile(file)
 		if err == nil {
+			fmt.Printf("failed to open %s (%v)\n", file, err)
 			return nil, err
 		}
 		return fh, nil
